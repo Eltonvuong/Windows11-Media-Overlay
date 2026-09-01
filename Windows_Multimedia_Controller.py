@@ -1,3 +1,4 @@
+from ast import Try
 import asyncio
 import tkinter as tk
 import threading
@@ -55,6 +56,12 @@ class MediaOverlay:
         self.switch_btn.pack(pady=(0, 8))
         self.hide_timer = None
 
+        self.root.bind("Escape", lambda e: self.root.destroy())
+
+        def check_signals():
+            self.root.after(500, check_signals)
+        check_signals()
+
 
     def on_switch_click(self):
         #TRigger the session switch in the background async loop
@@ -80,8 +87,11 @@ class MediaOverlay:
         if self.hide_timer:
             self.root.after_cancel(self.hide_timer)
             #So this will cancel any active hide timer when we go spam mode
-        self.hide_timer = self.root.after(2500, self.root.withdraw)
-        # This will start the 2.5 second timer and calls withdraw() to hide the overlay
+        self.hide_timer = self.root.after(3000, self.root.withdraw)
+        # This will start the 3 second timer and calls withdraw() to hide the overlay
+
+    
+
 
 
 
@@ -154,10 +164,17 @@ if __name__ == "__main__":
 
 
     def run_asyncio():
-        loop.run_until_complete(controller.start(overlay, loop))
+        try:
+
+            loop.run_until_complete(controller.start(overlay, loop))
+        except asyncio.CancelledError:
+            pass
 
     
     threading.Thread(target=run_asyncio, daemon=True).start()
 
 
-    root.mainloop()
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        root.destroy()
