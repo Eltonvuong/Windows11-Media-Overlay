@@ -25,6 +25,10 @@ class MediaOverlay:
         self.root.config(bg="#1e1e1e")
         # This is the background color
 
+        # These two lines are for when you're 
+        self.hide_timer_id = None
+        self.is_hovered = False
+
         self.root.withdraw()
         #This starts it hidden
 
@@ -57,6 +61,10 @@ class MediaOverlay:
         self.hide_timer = None
 
         self.root.bind("Escape", lambda e: self.root.destroy())
+        
+        # These two lines are for when the mouse hovers over the overlay, so it will cancel auto-hide
+        self.root.bind("<Enter>", self.on_mouse_enter)
+        self.root.bind("<Leave>", self.on_mouse_leave)
 
         def check_signals():
             self.root.after(500, check_signals)
@@ -81,14 +89,52 @@ class MediaOverlay:
 
         #Reverses the .withdraw() to make hidden window visible
         self.root.deiconify()
+        #THis will make the overlay visible again, and will reset the auto-hide timer
+        self.reset_hide_timer()
 
 
-        # This will reset the auto-hide countdown, I'm going to make it 2.5 seconds for now
+        '''# This will reset the auto-hide countdown, I'm going to make it 2.5 seconds for now
         if self.hide_timer:
             self.root.after_cancel(self.hide_timer)
             #So this will cancel any active hide timer when we go spam mode
         self.hide_timer = self.root.after(3000, self.root.withdraw)
-        # This will start the 3 second timer and calls withdraw() to hide the overlay
+        # This will start the 3 second timer and calls withdraw() to hide the overlay'''
+
+    def reset_hide_timer(self):
+
+        if self.hide_timer_id is not None:
+            try:
+                self.root.after_cancel(self.hide_timer_id)
+            except (ValueError, KeyError):
+                pass
+            self.hide_timer_id = None
+
+
+        if not self.is_hovered:
+            self.hide_timer_id = self.root.after(3000, self.hide_overlay)
+
+    def on_mouse_enter(self, event):
+        
+        self.is_hovered = True
+        if self.hide_timer_id is not None:
+            try:
+                self.root.after_cancel(self.hide_timer_id)
+            except (ValueError, KeyError):
+                pass
+            self.hide_timer_id = None
+
+    def on_mouse_leave(self, event):
+
+        self.is_hovered = False
+        self.reset_hide_timer()
+
+    def hide_overlay(self):
+
+        self.hide_timer_id = None
+        #Clear timer ID since it completed execution
+        if not self.is_hovered:
+            self.root.withdraw()
+            
 
     
 
