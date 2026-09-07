@@ -109,7 +109,7 @@ class MediaOverlay:
                 pass
             self.hide_timer_id = None
 
-
+        #This is for when is you're not hovering, it will just bring the timer for 3 seconds back
         if not self.is_hovered:
             self.hide_timer_id = self.root.after(3000, self.hide_overlay)
 
@@ -148,6 +148,7 @@ class MediaController:
         self.current_index = 0
         self.overlay = None
         self.loop = None
+        self.attached_sessions = set()
 
     async def start(self, overlay, loop):
         self.overlay = overlay
@@ -162,13 +163,24 @@ class MediaController:
             await asyncio.sleep(2)
             # This continuously check if sessions changed (apps opened/closed)
             await self.refresh_sessions()
+            self.attach_event_listener()
 
     def attach_event_listener(self):
-        current = self.manager.get_current_session()
-        if current:
-            current.add_media_properties_changed(self.on_media_properties_changed)
+        for session in self.sessions:
+            app_id = session.source_app_user_model_id
+            if app_id not in self.attached_sessions:
+
+                #This line is for tracking metadata changes (Next/Previous track)
+                session.add_media_properties_changed(self.on_media_properties_changed)
+
+                session.add_playback_info_changed(self.on_playback_info_changed)
+
+                self.attached_sessions.add(app_id)
 
     def on_media_properties_changed(self, session, args=None):
+        asyncio.run_coroutine_threadsafe(self.update_current_display(), self.loop)
+
+    def on_playback_info_changed(self, session, args=None):
         asyncio.run_coroutine_threadsafe(self.update_current_display(), self.loop)
 
     async def refresh_sessions(self):
@@ -184,7 +196,7 @@ class MediaController:
         session = self.sessions[self.current_index]
         info = await session.try_get_media_properties_async()
 
-        if info:
+        if info and info.title:
             #Get the app name(Spotify.exe or chrome)
             app_id = session.source_app_user_model_id.split("!")[0]
             self.overlay.show_popup(info.title, info.artist, app_id)
