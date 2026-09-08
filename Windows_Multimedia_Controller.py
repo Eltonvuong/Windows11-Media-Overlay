@@ -3,7 +3,8 @@ import asyncio
 import tkinter as tk
 import threading
 from winsdk.windows.media.control import (
-    GlobalSystemMediaTransportControlsSessionManager as SessionManager
+    GlobalSystemMediaTransportControlsSessionManager as SessionManager,
+    GlobalSystemMediaTransportControlsSessionPlaybackStatus as PlaybackStatus
     )
 
 
@@ -181,7 +182,39 @@ class MediaController:
         asyncio.run_coroutine_threadsafe(self.update_current_display(), self.loop)
 
     def on_playback_info_changed(self, session, args=None):
-        asyncio.run_coroutine_threadsafe(self.update_current_display(), self.loop)
+        asyncio.run_coroutine_threadsafe(self.check_active_playback(session), self.loop)
+
+    async def check_active_playback(self, session):
+        # This is the auto-switch to the application playing media or that started to play audio
+        playback_info = session.get_playback_info()
+        if playback_info and playback_info.playback_status == PlaybackStatus.PLAYING:
+            #This finds if the index of the session that is actively playing media
+            for idx, s in enumerate(self.sessions):
+                if s.source_app_user_model_id == session.source_app_user_model_id:
+                    self.current_index = idx
+                    break
+
+        await self.update_current_display()
+    
+    async def update_current_session(self):
+        if not self.sessions:
+            return
+
+        #This makes sure that the current index is valid and within the range of the sessions list
+        if self.current_index >= len(self.sessions):
+            self.current_index = 0
+
+            session = self.sessions[self.current_index]
+            info = await session.try_get_media_properties_async()
+
+            if info and info.title:
+
+                app_id = session.source_app_user_model_id.split("!")[0]
+
+                clean_app_name = app_id.split("\\")[-1].replace(".exe", "").capitalize()
+
+                self.overlay.show_popup(info.title, info.artist, clean_app_name)
+
 
     async def refresh_sessions(self):
         # Get list of all open players sending media info

@@ -5,7 +5,8 @@
     <ProjectGuid>2f8aee2d-c8b8-463e-b5ea-dcded9558e3c</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>Windows_Multimedia_Controler.py</StartupFile>
+    <StartupFile>
+    </StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,7 +23,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Windows_Multimedia_Controler.py" />
+    <Compile Include="Windows_Multimedia_Controller.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
