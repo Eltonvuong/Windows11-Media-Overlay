@@ -1,4 +1,4 @@
-from ast import Try
+
 import asyncio
 import tkinter as tk
 import threading
@@ -32,6 +32,13 @@ class MediaOverlay:
 
         self.root.withdraw()
         #This starts it hidden
+
+
+        #This chunk of code is for text scrolling
+        self.title_text = ""
+        self.artist_text = ""
+        self.scroll_timer_id = None
+        self.max_display_length = 22
 
         
         #This is the UI elements of the overlay window
@@ -71,6 +78,51 @@ class MediaOverlay:
             self.root.after(500, check_signals)
         check_signals()
 
+    def show_popup(self, title, artist, app_name=""):
+
+        # This will pad the strings with trailing spaces for smooth looping
+        self.title_text = title if len(title) <= self.max_display_length else f"{title}   .    "
+        self.artist_text = artist if len(artist) <= self.max_display_length else f"{artist}   .    "
+        self.source_label.config(text=f"Source: {app_name}")
+
+        # This will stop active marquee loops before starting a new one
+        if self.scroll_timer_id is not None:
+            self.root.after_cancel(self.scroll_timer_id)
+            self.scroll_timer_id = None
+
+        # This will reset label text diaplays
+        self.title_label.config(text=self.title_text[:self.max_display_length])
+        self.artist_label.config(text=self.artist_text[:self.max_display_length])
+
+        #This line reverses .withdraw() to make hidden overlay visible again
+        self.root.deiconify()
+        # This just makes the overlay visibnle again and resets the auto-hide timer
+        self.reset_hide_timer()
+
+
+        # This starts the scrolling animation loops
+        self.animate_scroll()
+
+    def animate_scroll(self):
+
+        if len(self.title_text) > self.max_display_length:
+            self.title_text = self.title_text[1:] + self.title_text[0]
+
+            self.title_label.config(text=self.title_text[:self.max_display_length])
+
+        if len(self.artist_text) > self.max_display_length:
+            self.artist_text = self.artist_text[1:] + self.artist_text[0]
+
+            self.artist_label.config(text=self.artist_text[:self.max_display_length])
+
+        #This will schedule the next frames (250ms = 4 steps per second)
+        self.scroll_timer_id = self.root.after(250, self.animate_scroll)
+
+
+
+
+
+
 
     def on_switch_click(self):
         #TRigger the session switch in the background async loop
@@ -78,28 +130,7 @@ class MediaOverlay:
 
 
 
-    def show_popup(self, title, artist, app_name=""):
-
-        #This will update the text
-        ## Injects the track name and artist into UI labels
-        self.title_label.config(text = title)
-        self.artist_label.config(text = artist)
-        self.source_label.config(text=f"Source: {app_name}")
-
-
-
-        #Reverses the .withdraw() to make hidden window visible
-        self.root.deiconify()
-        #THis will make the overlay visible again, and will reset the auto-hide timer
-        self.reset_hide_timer()
-
-
-        '''# This will reset the auto-hide countdown, I'm going to make it 2.5 seconds for now
-        if self.hide_timer:
-            self.root.after_cancel(self.hide_timer)
-            #So this will cancel any active hide timer when we go spam mode
-        self.hide_timer = self.root.after(3000, self.root.withdraw)
-        # This will start the 3 second timer and calls withdraw() to hide the overlay'''
+   
 
     def reset_hide_timer(self):
 
