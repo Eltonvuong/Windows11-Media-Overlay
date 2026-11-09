@@ -23,11 +23,39 @@ class MediaOverlay:
         self.root.wm_attributes("-topmost", True)
         # This will make the window always on top like an overlay, so on games or anyother application
         
-        self.root.geometry("350x125+2190+20")
-        # This is the position of the popup itself old 350x125+2190+20
+        self.root.geometry("520x210+1995+25")
+        # This is the position of the popup itself old 350x125+2190+20, this is set to a 2560 x 1440 resolution screen
+        
+        #Content Frame for Labels
+        self.text_frame = tk.Frame(root, bg="#1e1e1e")
+        self.text_frame.place(x=205, y=15, width=295, height=170)
+
+
+        #This is the UI elements of the overlay window
+        self.title_label = tk.Label(self.text_frame, text="", fg="white",bg ="#1e1e1e", font = ("Segoe UI", 14, "bold"), anchor="w")
+        self.title_label.pack(fill="x", pady=(0, 2))
+        #Old self.title_label.pack(pady=(15, 2))
+
+        self.artist_label = tk.Label(self.text_frame, text="", fg = "#aaaaaa", bg = "#1e1e1e", font = ("Segoe UI", 12), anchor="w")
+        self.artist_label.pack(fill="x", pady=(0,2))
+        #This is new fill="x" to make it stretch across the overlay window
+
+
 
         self.root.config(bg="#1e1e1e")
         # This is the background color
+
+        #IMage container for the art 
+        self.art_image = None
+        self.art_label = tk.Label(root, bg="#1e1e1e")
+        self.art_label.place(x=20, y=20, width=170, height=170)
+
+        
+
+        #This is for the source of the media that is currently playing
+        self.source_label = tk.Label(self.text_frame, text="", fg = "#666666", bg = "#1e1e1e", font = ("Segoe UI", 9), anchor="w")
+        self.source_label.pack(fill="x", pady=(0, 2))
+
 
         # These two lines are for when you're 
         self.hide_timer_id = None
@@ -41,44 +69,50 @@ class MediaOverlay:
         self.title_text = ""
         self.artist_text = ""
         self.scroll_timer_id = None
-        self.max_display_length = 22
+        self.max_display_length = 28
 
-        #IMage container for the art 
-        self.art_image = None
-        self.art_label = tk.Label(root, bg="#1e1e1e")
-        self.art_label.place(x=10, y=15, width=100, height=100)
+        #THis is for the control buttons
+        self.control_frame = tk.Frame(self.text_frame, bg="#1e1e1e")
+        #This will pack to the bottom of the text frame
+        self.control_frame.pack(fill = "x", pady=(0,2))
 
-        #Content Frame for Labels
-        self.text_frame = tk.Frame(root, bg="#1e1e1e")
-        self.text_frame.place(x=120, y=15, width=250, height=100)
+        btn_style = {
+            "bg": "#2d2d2d",
+            "fg": "white",
+            "activebackground": "#3d3d3d",
+            "activeforeground": "white",
+            "bd": 0,
+            "font": ("Segoe UI", 9),
+            "pady": 3
+            }
 
-        #This is the UI elements of the overlay window
-        self.title_label = tk.Label(self.text_frame, text="", fg="white",bg ="#1e1e1e", font = ("Segoe UI", 12, "bold"), anchor="w")
-        self.title_label.pack(fill="x", pady=(5, 2))
-        #Old self.title_label.pack(pady=(15, 2))
+        #This is the control buttons for the overlay window
+        self.playback_row = tk.Frame(self.control_frame, bg="#1e1e1e")
+        self.playback_row.pack(fill = "x", pady=(0, 2))
+        
+        self.prev_button = tk.Button(self.playback_row, text="⏮️", command=self.on_prev_click, **btn_style)
+        self.play_button = tk.Button(self.playback_row, text="⏯️", command=self.on_play_pause_click, **btn_style)
+        self.next_button = tk.Button(self.playback_row, text="⏭️", command=self.on_next_click, **btn_style)
 
+        for btn in (self.prev_button, self.play_button, self.next_button):
+            btn.pack(side="left", expand=True, fill="x", padx=1)
 
-        self.artist_label = tk.Label(self.text_frame, text="", fg = "#aaaaaa", bg = "#1e1e1e", font = ("Segoe UI", 10), anchor="w")
-        self.artist_label.pack(fill="x")
-        #This is new fill="x" to make it stretch across the overlay window
+            
 
-        self.source_label = tk.Label(self.text_frame, text="", fg = "#666666", bg = "#1e1e1e", font = ("Segoe UI", 8), anchor="w")
-        self.source_label.pack(fill="x", pady=(2,5))
+        
 
         # Switching the source of media that's currently playing
         self.switch_btn = tk.Button(
-            root,
+            self.control_frame,
             text="🔄 Switch App",
             command=self.on_switch_click,
-            bg="#2d2d2d",
-            fg="white",
-            activebackground="#3d3d3d",
-            activeforeground="white",
-            bd=0,
-            font=("Segoe UI", 8)
+            **btn_style
+            
         )
+        
+        
 
-        self.switch_btn.pack(pady=(0, 8))
+        self.switch_btn.pack(fill="x", padx=1)
         self.hide_timer = None
 
         self.root.bind("Escape", lambda e: self.root.destroy())
@@ -87,6 +121,8 @@ class MediaOverlay:
         self.root.bind("<Enter>", self.on_mouse_enter)
         self.root.bind("<Leave>", self.on_mouse_leave)
 
+
+
         
     def update_thumbnail(self, image_bytes):
 
@@ -94,7 +130,7 @@ class MediaOverlay:
         if image_bytes:
             try:
                 pil_img = Image.open(io.BytesIO(image_bytes))
-                pil_img = pil_img.convert("RGBA").resize((100, 100), Image.Resampling.LANCZOS)
+                pil_img = pil_img.convert("RGBA").resize((150, 150), Image.Resampling.LANCZOS)
                 '''Format conversion pillow struggles to convert certain, 
                 uncompressed or palette-based pixel streams into TKinter PhotoImage.
                 This will translate pixel array into standard 32-bit color channels before handing it to TKinter.
@@ -106,7 +142,7 @@ class MediaOverlay:
                 print(f"Error loading image: {e}")
 
         self.art_image = None
-        self.art_label.config(image="", text="🎵", fg="#555555", font=("Segoe UI", 32))
+        self.art_label.config(image="", text="🎵", fg="#555555", font=("Segoe UI", 52))
 
     def show_popup(self, title, artist, app_name="", image_bytes=None):
         
@@ -196,6 +232,16 @@ class MediaOverlay:
         #Clear timer ID since it completed execution
         if not self.is_hovered:
             self.root.withdraw()
+
+    def on_play_pause_click(self):
+        asyncio.run_coroutine_threadsafe(self.controller.toggle_play_pause(), self.controller.loop)
+
+    def on_next_click(self):
+        asyncio.run_coroutine_threadsafe(self.controller.skip_next(), self.controller.loop)
+
+    def on_prev_click(self):
+        asyncio.run_coroutine_threadsafe(self.controller.skip_previous(), self.controller.loop)
+
             
 
     
@@ -356,6 +402,27 @@ class MediaController:
         self.current_index = (self.current_index + 1) % len(self.sessions)
         await self.update_current_display()
 
+    async def toggle_play_pause(self):
+        if not self.sessions:
+            return
+        session = self.sessions[self.current_index]
+        playback_info = session.get_playback_info()
+        if playback_info and playback_info.playback_status == PlaybackStatus.PLAYING:
+            await session.try_pause_async()
+        else:
+            await session.try_play_async()
+    
+    async def skip_next(self):
+        if not self.sessions:
+            return
+        session = self.sessions[self.current_index]
+        await session.try_skip_next_async()
+
+    async def skip_previous(self):
+        if not self.sessions:
+            return
+        session = self.sessions[self.current_index]
+        await session.try_skip_previous_async()
 
 
 if __name__ == "__main__":
